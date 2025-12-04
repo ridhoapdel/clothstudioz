@@ -85,12 +85,71 @@
             <div class="bg-white p-6 rounded-lg shadow">
                 <div class="flex items-center">
                     <div class="p-3 bg-purple-500 rounded-full">
-                        <i class="fas fa-chart-line text-white text-xl"></i>
+                        <i class="fa fa-heart text-white text-xl"></i>
                     </div>
                     <div class="ml-4">
-                        <p class="text-gray-500 text-sm">Pendapatan</p>
-                        <p class="text-2xl font-bold">Rp 0</p>
+                        <p class="text-gray-500 text-sm">Wishlist Items</p>
+                        @php
+                            $totalWishlist = DB::table('wishlist')->count();
+                        @endphp
+                        <p class="text-2xl font-bold">{{ $totalWishlist }}</p>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Produk Terlaris</h2>
+                @php
+                    $topProducts = DB::table('produk')
+                        ->select('produk_id', 'nama_produk', 'harga', 'stok', 'gambar_produk')
+                        ->orderBy('produk_id', 'DESC')
+                        ->limit(5)
+                        ->get();
+                @endphp
+                <div class="space-y-3">
+                    @forelse($topProducts as $product)
+                        <div class="flex items-center justify-between border-b pb-2">
+                            <div class="flex items-center">
+                                <img src="{{ asset('uploads/' . $product->gambar_produk) }}" 
+                                     alt="{{ $product->nama_produk }}" 
+                                     class="w-12 h-12 object-cover rounded mr-3">
+                                <div>
+                                    <p class="font-medium text-sm">{{ $product->nama_produk }}</p>
+                                    <p class="text-xs text-gray-500">Stok: {{ $product->stok }}</p>
+                                </div>
+                            </div>
+                            <p class="font-semibold">Rp {{ number_format($product->harga, 0, ',', '.') }}</p>
+                        </div>
+                    @empty
+                        <p class="text-gray-500 text-center py-4">Belum ada produk</p>
+                    @endforelse
+                </div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow p-6">
+                <h2 class="text-xl font-bold mb-4">Aktivitas Terbaru</h2>
+                @php
+                    $recentCarts = DB::table('keranjang')
+                        ->join('user', 'keranjang.user_id', '=', 'user.id')
+                        ->join('produk', 'keranjang.produk_id', '=', 'produk.produk_id')
+                        ->select('user.username', 'produk.nama_produk', 'keranjang.jumlah', 'keranjang.created_at')
+                        ->orderBy('keranjang.created_at', 'DESC')
+                        ->limit(5)
+                        ->get();
+                @endphp
+                <div class="space-y-3">
+                    @forelse($recentCarts as $activity)
+                        <div class="border-b pb-2">
+                            <p class="text-sm"><span class="font-medium">{{ $activity->username }}</span> menambahkan ke keranjang</p>
+                            <p class="text-xs text-gray-500">{{ $activity->nama_produk }} ({{ $activity->jumlah }}x)</p>
+                            <p class="text-xs text-gray-400">{{ \Carbon\Carbon::parse($activity->created_at)->diffForHumans() }}</p>
+                        </div>
+                    @empty
+                        <p class="text-gray-500 text-center py-4">Belum ada aktivitas</p>
+                    @endforelse
                 </div>
             </div>
         </div>
@@ -103,6 +162,7 @@
                     <thead>
                         <tr class="border-b">
                             <th class="text-left py-3 px-4">ID</th>
+                            <th class="text-left py-3 px-4">Gambar</th>
                             <th class="text-left py-3 px-4">Nama Produk</th>
                             <th class="text-left py-3 px-4">Harga</th>
                             <th class="text-left py-3 px-4">Stok</th>
@@ -110,15 +170,34 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr class="border-b hover:bg-gray-50">
-                            <td class="py-3 px-4">-</td>
-                            <td class="py-3 px-4">-</td>
-                            <td class="py-3 px-4">-</td>
-                            <td class="py-3 px-4">-</td>
-                            <td class="py-3 px-4">
-                                <span class="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Aktif</span>
-                            </td>
-                        </tr>
+                        @php
+                            $recentProducts = DB::table('produk')
+                                ->orderBy('created_at', 'DESC')
+                                ->limit(10)
+                                ->get();
+                        @endphp
+                        @forelse($recentProducts as $product)
+                            <tr class="border-b hover:bg-gray-50">
+                                <td class="py-3 px-4">{{ $product->produk_id }}</td>
+                                <td class="py-3 px-4">
+                                    <img src="{{ asset('uploads/' . $product->gambar_produk) }}" 
+                                         alt="{{ $product->nama_produk }}" 
+                                         class="w-12 h-12 object-cover rounded">
+                                </td>
+                                <td class="py-3 px-4">{{ $product->nama_produk }}</td>
+                                <td class="py-3 px-4">Rp {{ number_format($product->harga, 0, ',', '.') }}</td>
+                                <td class="py-3 px-4">{{ $product->stok }}</td>
+                                <td class="py-3 px-4">
+                                    <span class="px-2 py-1 text-xs rounded-full {{ $product->stok > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                                        {{ $product->stok > 0 ? 'Tersedia' : 'Habis' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr>
+                                <td colspan="6" class="text-center py-6 text-gray-500">Belum ada produk</td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
             </div>

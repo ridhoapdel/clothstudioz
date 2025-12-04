@@ -1,59 +1,272 @@
+# ClothStudioz - E-commerce Fashion Platform
+
+ClothStudioz adalah platform e-commerce fashion yang dibangun menggunakan Laravel 12 dan Tailwind CSS.
+
+## 🚀 Fitur Utama
+
+### Frontend (User)
+- ✅ **Product Display & Search** (NINDYA)
+  - Katalog produk dengan grid layout responsive
+  - Live search dengan AJAX
+  - Filter produk (kategori, harga, ukuran)
+  - Sorting (terbaru, harga, nama)
+  - Discount badge untuk produk diskon
+  
+- ✅ **Wishlist & Shopping Cart** (RIDHO)
+  - Wishlist dengan counter di navbar
+  - Add/remove wishlist dengan AJAX
+  - Shopping cart dengan size selection
+  - Cart counter di navbar
+  - Stock validation
+  - Update quantity cart items
+  
+- ✅ **Product Detail**
+  - Gambar produk
+  - Informasi lengkap (harga, stok, deskripsi)
+  - Size selection (S, M, L, XL)
+  - Add to cart & wishlist buttons
+  - Related products
+
+### Admin Panel (PITOM)
+- ✅ **Dashboard**
+  - Statistics (total produk, user, transaksi, wishlist)
+  - Top 5 products
+  - Recent activities
+  - Recent products table
+  
+- ✅ **Product Management**
+  - CRUD operations for products
+  - Image upload
+  - Stock management per size
+  - Search functionality
+  - Product listing with images
+
+## 📋 Requirements
+
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- SQLite (atau MySQL/PostgreSQL)
+
+## ⚙️ Installation
+
+### 1. Clone Repository
+
+```bash
+git clone https://github.com/ridhoapdel/clothstudioz.git
+cd clothstudioz
+```
+
+### 2. Install Dependencies
+
+```bash
+# Install PHP dependencies
+composer install
+
+# Install JavaScript dependencies
+npm install
+```
+
+### 3. Environment Setup
+
+```bash
+# Copy environment file
+cp .env.example .env
+
+# Generate application key
+php artisan key:generate
+
+# Create SQLite database
+touch database/database.sqlite
+```
+
+### 4. Database Migration & Seeding
+
+```bash
+# Run migrations
+php artisan migrate
+
+# Seed sample data
+php artisan db:seed
+```
+
+**Default Credentials:**
+- Admin: `username: admin`, `password: admin123`
+- User: `username: user1-5`, `password: password`
+
+### 5. Create Upload Directory
+
+```bash
+# Create uploads directory for product images
+mkdir -p public/uploads
+chmod -R 775 public/uploads
+```
+
+### 6. Build Assets
+
+```bash
+# Development
+npm run dev
+
+# Production
+npm run build
+```
+
+### 7. Run Application
+
+```bash
+# Start development server
+php artisan serve
+```
+
+Visit `http://localhost:8000` in your browser.
+
+## 📁 Project Structure
+
+```
+clothstudioz/
+├── app/
+│   ├── Http/
+│   │   ├── Controllers/
+│   │   │   ├── HomeController.php        # Product listing, search
+│   │   │   ├── CartController.php        # Cart & wishlist
+│   │   │   ├── AdminController.php       # Admin panel
+│   │   │   └── UserController.php        # Authentication
+│   │   └── Middleware/
+│   │       └── AdminSession.php          # Admin authentication
+│   └── Models/
+│       ├── Product.php                   # Product model
+│       ├── Cart.php                      # Cart model
+│       ├── Wishlist.php                  # Wishlist model
+│       ├── Discount.php                  # Discount model
+│       └── Review.php                    # Review model
+├── database/
+│   ├── migrations/                       # Database migrations
+│   └── seeders/
+│       └── DatabaseSeeder.php            # Sample data seeder
+├── resources/
+│   ├── views/
+│   │   ├── layouts/
+│   │   │   ├── app.blade.php            # Main layout
+│   │   │   ├── navbar.blade.php         # Navigation with counters
+│   │   │   └── footer.blade.php
+│   │   ├── admin/                        # Admin views
+│   │   ├── index.blade.php               # Homepage
+│   │   ├── shopAll.blade.php            # Product listing with filters
+│   │   ├── product.blade.php            # Product detail
+│   │   ├── keranjang.blade.php          # Shopping cart
+│   │   └── wishlist.blade.php           # Wishlist
+│   └── js/                               # JavaScript files
+└── routes/
+    └── web.php                           # Application routes
+```
+
+## 🛠️ Technologies Used
+
+- **Backend:** Laravel 12
+- **Frontend:** Tailwind CSS 4.0
+- **Database:** SQLite (default), MySQL/PostgreSQL compatible
+- **JavaScript:** Vanilla JS with Fetch API for AJAX
+- **Icons:** Font Awesome
+- **Build Tool:** Vite
+
+## 🔑 Key Features Implementation
+
+### Live Search
+Located in `resources/views/layouts/navbar.blade.php`
+- Debounced AJAX search
+- Real-time product suggestions
+- Click-to-navigate results
+
+### Product Filtering
+Located in `resources/views/shopAll.blade.php`
+- Client-side filtering with JavaScript
+- Category, price range, and size filters
+- Sortable product list
+- Clear filters option
+
+### Cart & Wishlist
+Located in `app/Http/Controllers/CartController.php`
+- AJAX-based add/remove operations
+- Stock validation
+- Size-based inventory tracking
+- Session-based user tracking
+
+### Admin Dashboard
+Located in `resources/views/admin/dashboard.blade.php`
+- Real-time statistics
+- Top products display
+- Recent activities
+- Product management
+
+## 📝 Database Schema
+
+### Products (`produk`)
+- `produk_id` - Primary key
+- `nama_produk` - Product name
+- `deskripsi` - Description
+- `harga` - Price
+- `stok` - Total stock
+- `stok_s, stok_m, stok_l, stok_xl` - Stock per size
+- `kategori` - Category (Pria/Wanita/Anak/Aksesoris)
+- `warna` - Color
+- `brand` - Brand name
+- `gambar_produk` - Image filename
+
+### Cart (`keranjang`)
+- `keranjang_id` - Primary key
+- `user_id` - Foreign key to users
+- `produk_id` - Foreign key to products
+- `size` - Selected size
+- `jumlah` - Quantity
+
+### Wishlist
+- `wishlist_id` - Primary key
+- `user_id` - Foreign key to users
+- `produk_id` - Foreign key to products
+- `tanggal_ditambahkan` - Date added
+
+## 🎯 Team Members & Contributions
+
+- **NINDYA** - Product Display & Search
+  - Product listing with responsive grid
+  - Live search functionality
+  - Filters & sorting
+  
+- **RIDHO** - Wishlist & Shopping Cart
+  - Wishlist management
+  - Shopping cart functionality
+  - Stock validation
+  
+- **PITOM** - Admin Dashboard & Product Management
+  - Admin dashboard with statistics
+  - Product CRUD operations
+  - User management
+
+## 🐛 Known Issues & Future Improvements
+
+- [ ] Implement pagination for product listing
+- [ ] Add quick view modal for products
+- [ ] Enhance notification system (SweetAlert2/Toast)
+- [ ] Add order management system
+- [ ] Implement payment gateway integration
+- [ ] Add product review system
+- [ ] Multi-image upload for products
+- [ ] Advanced analytics dashboard
+- [ ] Email notifications
+
+## 📄 License
+
+This project is open-source and available under the MIT License.
+
+## 👥 Contributors
+
+- **ridhoapdel** - Project Owner
+- GitHub Copilot - AI Assistant
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Built with Laravel 12
 
-## About Laravel
-
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
-
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
-
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
-
-## Learning Laravel
-
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
-
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
-
-## Laravel Sponsors
-
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
-
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

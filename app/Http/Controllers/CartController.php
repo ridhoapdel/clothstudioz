@@ -61,18 +61,43 @@ class CartController extends Controller
 
         $user_id = session('user_id');
         $produk_id = $request->input('produk_id');
-        $size = $request->input('size', 'M', 'L', 'XL', 'S');
-        $quantity = 1;
+        $size = $request->input('size', 'M');
+        $quantity = $request->input('quantity', 1);
 
+        // Validate size using Product model
+        if (!App\Models\Product::isValidSize($size)) {
+            return response()->json(['success' => false, 'message' => 'Ukuran tidak valid']);
+        }
+
+        // Check stock availability
+        $product = DB::select("SELECT stok, stok_s, stok_m, stok_l, stok_xl FROM produk WHERE produk_id = ?", [$produk_id]);
+        if (empty($product)) {
+            return response()->json(['success' => false, 'message' => 'Produk tidak ditemukan']);
+        }
+
+        $stockField = 'stok_' . strtolower($size);
+        $availableStock = $product[0]->$stockField;
+        
         // Cek apakah produk sudah ada di keranjang
         $existing = DB::select("SELECT * FROM keranjang WHERE user_id = ? AND produk_id = ? AND size = ?", 
                                [$user_id, $produk_id, $size]);
 
         if ($existing) {
+            $currentQty = $existing[0]->jumlah;
+            $newQty = $currentQty + $quantity;
+            
+            if ($newQty > $availableStock) {
+                return response()->json(['success' => false, 'message' => 'Stok tidak mencukupi']);
+            }
+            
             // Update quantity
-            DB::update("UPDATE keranjang SET jumlah = jumlah + 1 WHERE user_id = ? AND produk_id = ? AND size = ?", 
-                      [$user_id, $produk_id, $size]);
+            DB::update("UPDATE keranjang SET jumlah = jumlah + ? WHERE user_id = ? AND produk_id = ? AND size = ?", 
+                      [$quantity, $user_id, $produk_id, $size]);
         } else {
+            if ($quantity > $availableStock) {
+                return response()->json(['success' => false, 'message' => 'Stok tidak mencukupi']);
+            }
+            
             // Insert new
             DB::insert("INSERT INTO keranjang (user_id, produk_id, size, jumlah) VALUES (?, ?, ?, ?)", 
                        [$user_id, $produk_id, $size, $quantity]);
@@ -90,7 +115,24 @@ class CartController extends Controller
         $cart_id = $request->input('cart_id');
         $action = $request->input('action');
 
+        // Get cart item with product stock info
+        $cartItem = DB::select("SELECT k.*, p.stok, p.stok_s, p.stok_m, p.stok_l, p.stok_xl 
+                                FROM keranjang k
+                                JOIN produk p ON k.produk_id = p.produk_id
+                                WHERE k.keranjang_id = ?", [$cart_id]);
+        
+        if (empty($cartItem)) {
+            return response()->json(['success' => false, 'message' => 'Item tidak ditemukan']);
+        }
+
+        $item = $cartItem[0];
+        $stockField = 'stok_' . strtolower($item->size);
+        $availableStock = $item->$stockField;
+
         if ($action === 'increase') {
+            if ($item->jumlah >= $availableStock) {
+                return response()->json(['success' => false, 'message' => 'Stok tidak mencukupi']);
+            }
             DB::update("UPDATE keranjang SET jumlah = jumlah + 1 WHERE keranjang_id = ?", [$cart_id]);
         } elseif ($action === 'decrease') {
             DB::update("UPDATE keranjang SET jumlah = GREATEST(jumlah - 1, 1) WHERE keranjang_id = ?", [$cart_id]);
