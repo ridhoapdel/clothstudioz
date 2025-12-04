@@ -163,25 +163,25 @@
 
         <p class="text-sm text-gray-600 mb-2">Ukuran:</p>
         <div class="flex space-x-4 mb-4">
-            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('S', this)">S</button>
-            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('M', this)">M</button>
-            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('L', this)">L</button>
-            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('XL', this)">XL</button>
+            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('S', this, event)">S</button>
+            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('M', this, event)">M</button>
+            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('L', this, event)">L</button>
+            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('XL', this, event)">XL</button>
         </div>
 
         <div class="flex items-center space-x-4 mb-6">
             <button id="addToCartButton"
                     type="button"
                     data-id="{{ $product->produk_id }}"
-                    onclick="handleAddToCart()" 
+                    onclick="handleAddToCart(event)" 
                     class="flex-1 bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
                     {{ $product->stok <= 0 ? 'disabled' : '' }}>
                 {{ $product->stok > 0 ? 'Pilih Ukuran Terlebih Dahulu' : 'Stok Habis' }}
             </button>
-            <button type="button" onclick="handleBuyNow()" class="flex-1 bg-white border border-black py-3 rounded-lg hover:bg-gray-200 transition" {{ $product->stok <= 0 ? 'disabled' : '' }}>
+            <button type="button" onclick="handleBuyNow(event)" class="flex-1 bg-white border border-black py-3 rounded-lg hover:bg-gray-200 transition" {{ $product->stok <= 0 ? 'disabled' : '' }}>
                 Beli Sekarang
             </button>
-            <button type="button" id="wishlistButton" onclick="toggleWishlist()" class="p-2 rounded-full border hover:bg-pink-100 transition">
+            <button type="button" id="wishlistButton" onclick="toggleWishlist(event)" class="p-2 rounded-full border hover:bg-pink-100 transition">
                 <i id="wishlistIcon" class="fa fa-heart wishlist-icon @if($in_wishlist) active text-pink-500 @else text-gray-500 @endif text-xl"></i>
             </button>
         </div>
@@ -263,13 +263,13 @@ window.cart = [];
 window.selectedSize = null;
 
 // Size selection function
-window.selectSize = function(size, element) {
+window.selectSize = function(size, element, evt) {
     console.log('Size selected:', size, 'element:', element);
     
     // Prevent event bubbling
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
+    if (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
     }
     
     window.selectedSize = size;
@@ -298,8 +298,14 @@ window.selectSize = function(size, element) {
     return false;
 };
 
-window.handleAddToCart = function() {
+window.handleAddToCart = function(evt) {
     console.log('Add to cart clicked, selectedSize:', window.selectedSize);
+    
+    // Prevent event bubbling
+    if (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
+    }
     
     if (!window.selectedSize) {
         alert('Pilih ukuran terlebih dahulu sebelum menambah ke keranjang.');
@@ -359,13 +365,13 @@ window.handleAddToCart = function() {
     });
 };
 
-window.handleBuyNow = function() {
+window.handleBuyNow = function(evt) {
     console.log('Buy now clicked, selectedSize:', window.selectedSize);
     
     // Prevent event bubbling
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
+    if (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
     }
     
     if (!window.selectedSize) {
@@ -383,13 +389,13 @@ window.handleBuyNow = function() {
     return false;
 };
 
-window.toggleWishlist = function() {
+window.toggleWishlist = function(evt) {
     console.log('Wishlist clicked');
     
     // Prevent event bubbling
-    if (event) {
-        event.preventDefault();
-        event.stopPropagation();
+    if (evt) {
+        evt.preventDefault();
+        evt.stopPropagation();
     }
     
     @if(!session()->has('user_id'))
@@ -517,41 +523,16 @@ document.addEventListener('DOMContentLoaded', function() {
         buyNowButton: !!buyNowButton
     });
     
-    // Add click listeners as backup
-    sizeButtons.forEach((btn, index) => {
-        btn.addEventListener('click', function(e) {
-            console.log('Size button clicked via listener:', this.textContent);
-            const size = this.textContent.trim();
-            window.selectSize(size, this);
-        });
-    });
-    
-    if (cartButton) {
-        cartButton.addEventListener('click', function(e) {
-            console.log('Cart button clicked via listener');
-            window.handleAddToCart();
-        });
-    }
-    
-    if (wishlistButton) {
-        wishlistButton.addEventListener('click', function(e) {
-            console.log('Wishlist button clicked via listener');
-            window.toggleWishlist();
-        });
-    }
-    
-    if (buyNowButton) {
-        buyNowButton.addEventListener('click', function(e) {
-            console.log('Buy now button clicked via listener');
-            window.handleBuyNow();
-        });
-    }
-    
     // Ensure modal doesn't block clicks when hidden
     const modal = document.getElementById('reviewModal');
     if (modal) {
         modal.style.display = 'none';
         modal.style.pointerEvents = 'none';
+    }
+    
+    // Ensure the cart button starts disabled if no size is selected
+    if (cartButton && !window.selectedSize) {
+        cartButton.disabled = true;
     }
 });
 </script>
