@@ -1,7 +1,6 @@
 @if(request()->get('query') && !request()->get('from_search_results'))
     @php
-        $query = urlencode(trim(request()->get('query')));
-        return redirect()->to('/search?query=' . $query . '&from_search_results=1');
+        // Redirect is handled in controller, this should not execute
     @endphp
 @endif
 

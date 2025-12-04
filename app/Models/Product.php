@@ -86,7 +86,15 @@ class Product extends Model
     public function isInStock($size = null, $quantity = 1)
     {
         if ($size) {
-            $stockField = 'stok_' . strtolower($size);
+            // Validate size input
+            $allowedSizes = ['s', 'm', 'l', 'xl'];
+            $sizeLower = strtolower($size);
+            
+            if (!in_array($sizeLower, $allowedSizes)) {
+                return false;
+            }
+            
+            $stockField = 'stok_' . $sizeLower;
             return $this->$stockField >= $quantity;
         }
         return $this->stok >= $quantity;

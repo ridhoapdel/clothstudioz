@@ -94,7 +94,7 @@
                             <span>Rp 200.000 - Rp 300.000</span>
                         </label>
                         <label class="flex items-center cursor-pointer">
-                            <input type="checkbox" class="filter-checkbox mr-2" name="price" value="300000-999999999">
+                            <input type="checkbox" class="filter-checkbox mr-2" name="price" value="300000-10000000">
                             <span>> Rp 300.000</span>
                         </label>
                     </div>
@@ -150,11 +150,7 @@
             <div id="productsContainer" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 @foreach($products as $product)
                     @php
-                        $in_wishlist = false;
-                        if (session()->has('user_id')) {
-                            $check = DB::table('wishlist')->where('user_id', session('user_id'))->where('produk_id', $product->produk_id)->first();
-                            $in_wishlist = !empty($check);
-                        }
+                        $in_wishlist = in_array($product->produk_id, $wishlistProductIds ?? []);
                     @endphp
                     <div class="product-card bg-white p-4 rounded-md shadow-md relative"
                        data-kategori="{{ $product->kategori ?? '' }}"

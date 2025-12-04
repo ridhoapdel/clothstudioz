@@ -20,11 +20,12 @@ class HomeController extends Controller
                   FROM produk p
                   LEFT JOIN barang_diskon bd ON p.produk_id = bd.produk_id 
                       AND CURDATE() BETWEEN bd.mulai_diskon AND bd.selesai_diskon
-                  WHERE (p.nama_produk LIKE '%$search%' OR p.deskripsi LIKE '%$search%')
+                  WHERE (p.nama_produk LIKE ? OR p.deskripsi LIKE ?)
                   AND p.stok > 0 
                   ORDER BY p.produk_id DESC LIMIT 12";
         
-        $products = DB::select($query);
+        $searchParam = '%' . $search . '%';
+        $products = DB::select($query, [$searchParam, $searchParam]);
         
         return view('index', compact('products', 'search'));
     }
@@ -41,13 +42,21 @@ class HomeController extends Controller
                   FROM produk p
                   LEFT JOIN barang_diskon bd ON p.produk_id = bd.produk_id 
                       AND CURDATE() BETWEEN bd.mulai_diskon AND bd.selesai_diskon
-                  WHERE (p.nama_produk LIKE '%$search%' OR p.deskripsi LIKE '%$search%')
+                  WHERE (p.nama_produk LIKE ? OR p.deskripsi LIKE ?)
                   AND p.stok > 0 
                   ORDER BY p.produk_id DESC";
         
-        $products = DB::select($query);
+        $searchParam = '%' . $search . '%';
+        $products = DB::select($query, [$searchParam, $searchParam]);
         
-        return view('shopAll', compact('products', 'search'));
+        // Get wishlist items for current user (if logged in)
+        $wishlistProductIds = [];
+        if (session()->has('user_id')) {
+            $wishlistItems = DB::select("SELECT produk_id FROM wishlist WHERE user_id = ?", [session('user_id')]);
+            $wishlistProductIds = array_column($wishlistItems, 'produk_id');
+        }
+        
+        return view('shopAll', compact('products', 'search', 'wishlistProductIds'));
     }
     
     public function product($id)
@@ -107,11 +116,12 @@ class HomeController extends Controller
                 FROM produk p
                 LEFT JOIN barang_diskon bd ON p.produk_id = bd.produk_id 
                     AND CURDATE() BETWEEN bd.mulai_diskon AND bd.selesai_diskon
-                WHERE (p.nama_produk LIKE '%$query%' OR p.deskripsi LIKE '%$query%')
+                WHERE (p.nama_produk LIKE ? OR p.deskripsi LIKE ?)
                 AND p.stok > 0 
                 ORDER BY p.produk_id DESC";
         
-        $products = DB::select($sql);
+        $searchParam = '%' . $query . '%';
+        $products = DB::select($sql, [$searchParam, $searchParam]);
         
         return view('search_results', compact('products', 'query'));
     }
@@ -121,17 +131,18 @@ class HomeController extends Controller
         $query = $request->get('query', '');
         
         if (strlen($query) <= 2) {
-            return [];
+            return response()->json([]);
         }
         
         $sql = "SELECT produk_id, nama_produk, harga, gambar_produk
                 FROM produk 
-                WHERE (nama_produk LIKE '%$query%' OR deskripsi LIKE '%$query%')
+                WHERE (nama_produk LIKE ? OR deskripsi LIKE ?)
                 AND stok > 0 
                 ORDER BY nama_produk ASC 
                 LIMIT 5";
         
-        $products = DB::select($sql);
+        $searchParam = '%' . $query . '%';
+        $products = DB::select($sql, [$searchParam, $searchParam]);
         
         return response()->json($products);
     }
