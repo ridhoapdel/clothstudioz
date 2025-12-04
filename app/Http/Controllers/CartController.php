@@ -61,7 +61,7 @@ class CartController extends Controller
 
         $user_id = session('user_id');
         $produk_id = $request->input('produk_id');
-        $size = $request->input('size', 'M');
+        $size = $request->input('size', 'M', 'L', 'XL', 'S');
         $quantity = 1;
 
         // Cek apakah produk sudah ada di keranjang

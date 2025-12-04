@@ -18,7 +18,7 @@
             <div class="w-full md:w-1/4 lg:w-1/5 bg-white rounded-lg shadow-md p-4">
                 <div class="flex flex-col items-center py-4 border-b">
                     <div class="w-20 h-20 rounded-full bg-gray-300 mb-3 overflow-hidden relative avatar-upload">
-                        <img src="{{ $user->profile_picture ? asset('uploads/avatars/' . $user->profile_picture) : asset('aset/user-avatar.png') }}" alt="User Avatar" class="w-full h-full object-cover">
+                        <img src="{{ isset($user->profile_picture) && $user->profile_picture ? asset('uploads/avatars/' . $user->profile_picture) : asset('aset/user-avatar.png') }}" alt="User Avatar" class="w-full h-full object-cover">
                         <form id="avatarForm" enctype="multipart/form-data" method="POST" action="{{ url('/user/upload-foto') }}">
                             @csrf
                             <label for="profile_picture" class="avatar-upload-label">

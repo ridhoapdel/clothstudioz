@@ -32,6 +32,11 @@
         z-index: 1000;
         justify-content: center;
         align-items: center;
+        pointer-events: none;
+    }
+    .modal.show {
+        display: flex;
+        pointer-events: auto;
     }
     .modal-content {
         background-color: white;
@@ -39,6 +44,85 @@
         border-radius: 0.5rem;
         width: 90%;
         max-width: 500px;
+        pointer-events: auto;
+    }
+    .size-btn {
+        pointer-events: auto !important;
+        z-index: 10 !important;
+        position: relative !important;
+        cursor: pointer !important;
+        user-select: none !important;
+    }
+    
+    /* Ensure no overlays block clicks */
+    .size-button:hover,
+    #addToCartButton:hover,
+    #wishlistButton:hover,
+    button[onclick*="buyNow"]:hover {
+        transform: scale(1.05);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    
+    /* Ensure no overlays block clicks */
+    main, section {
+        position: relative;
+        z-index: 1;
+    }
+    
+    /* Fix navbar z-index issues */
+    #navbar {
+        z-index: 40 !important;
+    }
+    
+    /* Ensure buttons are above other content */
+    .flex.items-center.space-x-4 {
+        position: relative;
+        z-index: 5;
+        pointer-events: auto !important;
+    }
+    
+    /* Remove any potential overlays */
+    .container {
+        position: relative;
+        z-index: 1;
+        pointer-events: auto;
+    }
+    
+    /* Ensure action buttons are clickable */
+    #addToCartButton, #wishlistButton, button[onclick*="buyNow"] {
+        pointer-events: auto !important;
+        cursor: pointer !important;
+        user-select: none !important;
+    }
+    
+    #addToCartButton:disabled, button[onclick*="buyNow"]:disabled {
+        cursor: not-allowed !important;
+        opacity: 0.6 !important;
+    }
+    
+    /* Debug styling for size buttons */
+    .size-btn {
+        border: 2px solid #000 !important;
+        background: #fff !important;
+        color: #000 !important;
+        font-weight: bold !important;
+        min-width: 50px !important;
+        height: 45px !important;
+        display: inline-flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        transition: all 0.2s ease !important;
+    }
+    
+    .size-btn:hover {
+        background: #000 !important;
+        color: #fff !important;
+        transform: scale(1.05) !important;
+    }
+    
+    .size-btn.selected {
+        background: #000 !important;
+        color: #fff !important;
     }
 </style>
 @endsection
@@ -79,24 +163,25 @@
 
         <p class="text-sm text-gray-600 mb-2">Ukuran:</p>
         <div class="flex space-x-4 mb-4">
-            <button class="size-button px-4 py-2 rounded border hover:bg-gray-800 hover:text-white" data-size="S">S</button>
-            <button class="size-button px-4 py-2 rounded border hover:bg-gray-800 hover:text-white" data-size="M">M</button>
-            <button class="size-button px-4 py-2 rounded border hover:bg-gray-800 hover:text-white" data-size="L">L</button>
-            <button class="size-button px-4 py-2 rounded border hover:bg-gray-800 hover:text-white" data-size="XL">XL</button>
+            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('S', this)">S</button>
+            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('M', this)">M</button>
+            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('L', this)">L</button>
+            <button type="button" class="size-btn px-4 py-2 rounded border-2 border-black bg-white text-black hover:bg-black hover:text-white transition-colors" onclick="selectSize('XL', this)">XL</button>
         </div>
 
         <div class="flex items-center space-x-4 mb-6">
             <button id="addToCartButton"
+                    type="button"
                     data-id="{{ $product->produk_id }}"
-                    onclick="addToCart()" 
+                    onclick="handleAddToCart()" 
                     class="flex-1 bg-black text-white py-3 rounded-lg hover:bg-gray-800 transition"
                     {{ $product->stok <= 0 ? 'disabled' : '' }}>
                 {{ $product->stok > 0 ? 'Pilih Ukuran Terlebih Dahulu' : 'Stok Habis' }}
             </button>
-            <button onclick="buyNow('{{ $product->nama_produk }}', {{ (int)($product->harga_diskon ?? $product->harga) }})" class="flex-1 bg-white border border-black py-3 rounded-lg hover:bg-gray-200 transition" {{ $product->stok <= 0 ? 'disabled' : '' }}>
+            <button type="button" onclick="handleBuyNow()" class="flex-1 bg-white border border-black py-3 rounded-lg hover:bg-gray-200 transition" {{ $product->stok <= 0 ? 'disabled' : '' }}>
                 Beli Sekarang
             </button>
-            <button id="wishlistButton" onclick="toggleWishlist()" class="p-2 rounded-full border hover:bg-pink-100 transition">
+            <button type="button" id="wishlistButton" onclick="toggleWishlist()" class="p-2 rounded-full border hover:bg-pink-100 transition">
                 <i id="wishlistIcon" class="fa fa-heart wishlist-icon @if($in_wishlist) active text-pink-500 @else text-gray-500 @endif text-xl"></i>
             </button>
         </div>
@@ -173,156 +258,301 @@
 
 @section('scripts')
 <script>
-    let cart = [];
-    let selectedSize = null;
+// Global variables
+window.cart = [];
+window.selectedSize = null;
 
-    // Initialize exactly like clothStudio
-    document.querySelectorAll('.size-button').forEach(button => {
-        button.addEventListener('click', function() {
-            selectedSize = this.getAttribute('data-size');
-            document.getElementById('addToCartButton').disabled = false;
-            document.querySelectorAll('.size-button').forEach(btn => btn.classList.remove('bg-gray-800', 'text-white'));
-            this.classList.add('bg-gray-800', 'text-white');
-        });
+// Size selection function
+window.selectSize = function(size, element) {
+    console.log('Size selected:', size, 'element:', element);
+    
+    // Prevent event bubbling
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    window.selectedSize = size;
+    
+    // Update button states
+    document.querySelectorAll('.size-btn').forEach(function(btn) {
+        btn.classList.remove('selected', 'bg-black', 'text-white');
+        btn.classList.add('bg-white', 'text-black');
     });
+    
+    // Highlight selected
+    if (element) {
+        element.classList.remove('bg-white', 'text-black');
+        element.classList.add('selected', 'bg-black', 'text-white');
+    }
+    
+    // Enable cart button
+    var cartBtn = document.getElementById('addToCartButton');
+    if (cartBtn) {
+        cartBtn.disabled = false;
+        cartBtn.textContent = 'Tambah ke Keranjang';
+        console.log('Cart button enabled');
+    }
+    
+    console.log('Size selection complete:', window.selectedSize);
+    return false;
+};
 
-    function toggleWishlist() {
-        // Check login exactly like clothStudio
-        @if(!session()->has('user_id'))
-            window.location.href = '{{ url("/users/login") }}';
-            return;
-        @endif
+window.handleAddToCart = function() {
+    console.log('Add to cart clicked, selectedSize:', window.selectedSize);
+    
+    if (!window.selectedSize) {
+        alert('Pilih ukuran terlebih dahulu sebelum menambah ke keranjang.');
+        return;
+    }
 
-        const productId = {{ $product->produk_id }};
-        const isInWishlist = {{ $in_wishlist ? 'true' : 'false' }};
-        const action = isInWishlist ? 'remove' : 'add';
-        const wishlistIcon = document.getElementById('wishlistIcon');
+    var productId = {{ $product->produk_id }};
+    var size = window.selectedSize;
+    var csrfToken = '{{ csrf_token() }}';
+    
+    console.log('Sending to cart:', {productId: productId, size: size});
 
-        // Toggle UI first (like clothStudio)
+    fetch('{{ url("/add_to_cart") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'produk_id=' + encodeURIComponent(productId) + '&size=' + encodeURIComponent(size) + '&_token=' + encodeURIComponent(csrfToken)
+    })
+    .then(function(response) {
+        console.log('Response status:', response.status);
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        console.log('Cart response:', data);
+        if(data.success) {
+            var product = {
+                name: '{{ $product->nama_produk }}',
+                price: {{ (int)($product->harga_diskon ?? $product->harga) }},
+                image: '{{ asset("uploads/" . $product->gambar_produk) }}',
+                quantity: 1,
+                size: window.selectedSize,
+                id: {{ $product->produk_id }}
+            };
+            window.showNotification(product);
+            // Reset selection after successful add
+            window.selectedSize = null;
+            var cartBtn = document.getElementById('addToCartButton');
+            if (cartBtn) {
+                cartBtn.disabled = true;
+                cartBtn.textContent = 'Pilih Ukuran Terlebih Dahulu';
+            }
+            document.querySelectorAll('.size-btn').forEach(function(btn) {
+                btn.classList.remove('bg-black', 'text-white');
+                btn.classList.add('bg-white', 'text-black');
+            });
+        } else {
+            alert(data.message || 'Gagal menambahkan ke keranjang');
+        }
+    })
+    .catch(function(error) {
+        console.error('Error:', error);
+        alert('Gagal menambahkan ke keranjang. Error: ' + error.message);
+    });
+};
+
+window.handleBuyNow = function() {
+    console.log('Buy now clicked, selectedSize:', window.selectedSize);
+    
+    // Prevent event bubbling
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    if (!window.selectedSize) {
+        alert('Pilih ukuran terlebih dahulu sebelum membeli.');
+        return false;
+    }
+    
+    @if(!session()->has('user_id'))
+        alert('Anda harus login terlebih dahulu.');
+        window.location.href = '{{ url("/users/login") }}';
+        return false;
+    @endif
+
+    alert('Fitur beli sekarang akan segera hadir!');
+    return false;
+};
+
+window.toggleWishlist = function() {
+    console.log('Wishlist clicked');
+    
+    // Prevent event bubbling
+    if (event) {
+        event.preventDefault();
+        event.stopPropagation();
+    }
+    
+    @if(!session()->has('user_id'))
+        console.log('User not logged in, redirecting to login');
+        alert('Anda harus login terlebih dahulu untuk menambah ke wishlist.');
+        window.location.href = '{{ url("/users/login") }}';
+        return false;
+    @endif
+
+    var productId = {{ $product->produk_id }};
+    var isInWishlist = {{ $in_wishlist ? 'true' : 'false' }};
+    var action = isInWishlist ? 'remove' : 'add';
+    var wishlistIcon = document.getElementById('wishlistIcon');
+    var csrfToken = '{{ csrf_token() }}';
+    
+    console.log('Wishlist action:', action, 'for product:', productId);
+
+    // Toggle UI first
+    if (wishlistIcon) {
         wishlistIcon.classList.toggle('active');
         wishlistIcon.classList.toggle('text-pink-500');
         wishlistIcon.classList.toggle('text-gray-500');
+    }
 
-        // Send to appropriate endpoint
-        fetch(action === 'add' ? '{{ url("/add_to_wishlist") }}' : '{{ url("/remove_from_wishlist") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: `produk_id=${productId}`
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (!data.success) {
-                // Revert exactly like clothStudio
+    var url = action === 'add' ? '{{ url("/add_to_wishlist") }}' : '{{ url("/remove_from_wishlist") }}';
+    console.log('Sending to:', url);
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: 'produk_id=' + encodeURIComponent(productId) + '&_token=' + encodeURIComponent(csrfToken)
+    })
+    .then(function(response) {
+        console.log('Wishlist response status:', response.status);
+        if (!response.ok) {
+            throw new Error('Network response was not ok: ' + response.status);
+        }
+        return response.json();
+    })
+    .then(function(data) {
+        console.log('Wishlist response:', data);
+        if (!data.success) {
+            // Revert on error
+            if (wishlistIcon) {
                 wishlistIcon.classList.toggle('active');
                 wishlistIcon.classList.toggle('text-pink-500');
                 wishlistIcon.classList.toggle('text-gray-500');
-                alert(data.message || 'Gagal update wishlist');
             }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            // Revert exactly like clothStudio
+            alert(data.message || 'Gagal update wishlist');
+        } else {
+            alert(data.message || (action === 'add' ? 'Berhasil ditambahkan ke wishlist!' : 'Berhasil dihapus dari wishlist!'));
+        }
+    })
+    .catch(function(error) {
+        console.error('Wishlist error:', error);
+        // Revert on error
+        if (wishlistIcon) {
             wishlistIcon.classList.toggle('active');
             wishlistIcon.classList.toggle('text-pink-500');
             wishlistIcon.classList.toggle('text-gray-500');
-            alert('Gagal update wishlist. Silakan coba lagi.');
-        });
-    }
-
-    function addToCart() {
-        if (!selectedSize) {
-            alert('Pilih ukuran terlebih dahulu sebelum menambah ke keranjang.');
-            return;
         }
+        alert('Gagal update wishlist. Error: ' + error.message);
+    });
+    
+    return false;
+};
 
-        const productId = {{ $product->produk_id }};
-        const size = selectedSize;
-
-        fetch('{{ url("/add_to_cart") }}', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-            },
-            body: `produk_id=${productId}&size=${size}`
-        })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            if(data.success) {
-                const product = {
-                    name: '{{ $product->nama_produk }}',
-                    price: {{ (int)($product->harga_diskon ?? $product->harga) }},
-                    image: '{{ asset("uploads/" . $product->gambar_produk) }}',
-                    quantity: 1,
-                    size: selectedSize,
-                    id: {{ $product->produk_id }}
-                };
-                showNotification(product);
-                // Reset selection after successful add
-                selectedSize = null;
-                document.getElementById('addToCartButton').disabled = true;
-                document.querySelectorAll('.size-button').forEach(btn => btn.classList.remove('bg-gray-800', 'text-white'));
-            } else {
-                alert(data.message || 'Gagal menambahkan ke keranjang');
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Gagal menambahkan ke keranjang. Silakan coba lagi atau login terlebih dahulu.');
-        });
+window.showNotification = function(product) {
+    var notifContent = document.getElementById('notifContent');
+    if (notifContent) {
+        notifContent.innerHTML = '<div class="flex justify-between items-center border-b pb-4 mb-4">' +
+            '<img src="' + product.image + '" alt="' + product.name + '" class="w-12 h-12 object-cover">' +
+            '<div class="ml-4">' +
+            '<h3 class="font-bold">' + product.name + ' (Ukuran: ' + product.size + ')</h3>' +
+            '<p>Rp ' + product.price.toLocaleString('id-ID') + '</p>' +
+            '<small>ID: ' + product.id + '</small>' +
+            '</div>' +
+            '</div>';
     }
-
-    function showNotification(product) {
-        const notifContent = document.getElementById('notifContent');
-        notifContent.innerHTML = `
-            <div class="flex justify-between items-center border-b pb-4 mb-4">
-                <img src="${product.image}" alt="${product.name}" class="w-12 h-12 object-cover">
-                <div class="ml-4">
-                    <h3 class="font-bold">${product.name} (Ukuran: ${product.size})</h3>
-                    <p>Rp ${product.price.toLocaleString('id-ID')}</p>
-                    <small>ID: ${product.id}</small>
-                </div>
-            </div>
-        `;
-        const notifSidebar = document.getElementById('notifSidebar');
+    
+    var notifSidebar = document.getElementById('notifSidebar');
+    if (notifSidebar) {
         notifSidebar.classList.add('slide-in');
         notifSidebar.style.transform = 'translateX(0)';
 
-        setTimeout(() => {
+        setTimeout(function() {
             notifSidebar.style.transform = 'translateX(100%)';
         }, 3000);
     }
+};
 
-    function closeSidebar() {
-        document.getElementById('notifSidebar').style.transform = 'translateX(100%)';
+window.closeSidebar = function() {
+    var notifSidebar = document.getElementById('notifSidebar');
+    if (notifSidebar) {
+        notifSidebar.style.transform = 'translateX(100%)';
     }
+};
 
-    function viewCart() {
-        window.location.href = "{{ url('/keranjang') }}";
-        closeSidebar();
+window.viewCart = function() {
+    window.location.href = "{{ url('/keranjang') }}";
+    window.closeSidebar();
+};
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Product page loaded - functions available:', {
+        selectSize: typeof window.selectSize,
+        handleAddToCart: typeof window.handleAddToCart,
+        handleBuyNow: typeof window.handleBuyNow,
+        toggleWishlist: typeof window.toggleWishlist
+    });
+    
+    // Test button accessibility
+    const sizeButtons = document.querySelectorAll('.size-btn');
+    const cartButton = document.getElementById('addToCartButton');
+    const wishlistButton = document.getElementById('wishlistButton');
+    const buyNowButton = document.querySelector('button[onclick*="buyNow"]');
+    
+    console.log('Button elements found:', {
+        sizeButtons: sizeButtons.length,
+        cartButton: !!cartButton,
+        wishlistButton: !!wishlistButton,
+        buyNowButton: !!buyNowButton
+    });
+    
+    // Add click listeners as backup
+    sizeButtons.forEach((btn, index) => {
+        btn.addEventListener('click', function(e) {
+            console.log('Size button clicked via listener:', this.textContent);
+            const size = this.textContent.trim();
+            window.selectSize(size, this);
+        });
+    });
+    
+    if (cartButton) {
+        cartButton.addEventListener('click', function(e) {
+            console.log('Cart button clicked via listener');
+            window.handleAddToCart();
+        });
     }
-
-    function buyNow(productName, productPrice) {
-        if (!selectedSize) {
-            alert('Pilih ukuran terlebih dahulu sebelum membeli.');
-            return;
-        }
-        
-        @if(!session()->has('user_id'))
-            alert('Anda harus login terlebih dahulu.');
-            window.location.href = '{{ url("/users/login") }}';
-            return;
-        @endif
-
-        alert('Fitur beli sekarang akan segera hadir!');
+    
+    if (wishlistButton) {
+        wishlistButton.addEventListener('click', function(e) {
+            console.log('Wishlist button clicked via listener');
+            window.toggleWishlist();
+        });
     }
+    
+    if (buyNowButton) {
+        buyNowButton.addEventListener('click', function(e) {
+            console.log('Buy now button clicked via listener');
+            window.handleBuyNow();
+        });
+    }
+    
+    // Ensure modal doesn't block clicks when hidden
+    const modal = document.getElementById('reviewModal');
+    if (modal) {
+        modal.style.display = 'none';
+        modal.style.pointerEvents = 'none';
+    }
+});
 </script>
 @endsection

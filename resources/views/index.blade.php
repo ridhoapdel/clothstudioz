@@ -6,6 +6,7 @@
 <style>
     .product-card {
         transition: all 0.3s ease;
+        z-index: 10;
     }
     .product-card:hover {
         transform: translateY(-5px);
