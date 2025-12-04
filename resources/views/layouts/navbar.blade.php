@@ -32,11 +32,35 @@
                     </svg>
                 </button>
                 
-                <!-- Cart Icon -->
-                <a href="{{ url('/keranjang') }}" class="flex items-center transition duration-300 hover:scale-105">
+                <!-- Wishlist Icon with Counter -->
+                @if (session()->has('user_id'))
+                    @php
+                        $wishlist_count = DB::table('wishlist')->where('user_id', session('user_id'))->count();
+                    @endphp
+                    <a href="{{ url('/wishlist') }}" class="flex items-center relative transition duration-300 hover:scale-105">
+                        <svg class="text-black" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="none" viewBox="0 0 24 24">
+                            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 6C6.5 1 1 8 5.8 13l6.2 7 6.2-7C23 8 17.5 1 12 6Z"/>
+                        </svg>
+                        @if($wishlist_count > 0)
+                            <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ $wishlist_count }}</span>
+                        @endif
+                    </a>
+                @endif
+                
+                <!-- Cart Icon with Counter -->
+                @php
+                    $cart_count = 0;
+                    if (session()->has('user_id')) {
+                        $cart_count = DB::table('keranjang')->where('user_id', session('user_id'))->count();
+                    }
+                @endphp
+                <a href="{{ url('/keranjang') }}" class="flex items-center relative transition duration-300 hover:scale-105">
                     <svg class="text-black" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="35" height="35" fill="none" viewBox="0 0 24 24">
                         <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 4h1.5L9 16m0 0h8m-8 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm8 0a2 2 0 1 0 0 4 2 2 0 0 0 0-4Zm-8.5-3h9.25L19 7H7.312"/>
                     </svg>
+                    @if($cart_count > 0)
+                        <span class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">{{ $cart_count }}</span>
+                    @endif
                 </a>
                 
                 <!-- User Icon -->
@@ -55,7 +79,6 @@
                 @endif
             </div>
             
-            <!-- Search Bar (Awalnya Tersembunyi) -->
             <div id="search-container">
                 <form action="{{ url('/search') }}" method="GET" class="flex items-center w-full max-w-4xl mx-auto relative">
                     <button type="button" id="close-search" class="mr-4 text-gray-500 hover:text-black">
@@ -71,6 +94,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z" />
                         </svg>
                     </button>
+                    <!-- Live Search Results -->
+                    <div id="live-search-results" class="search-results" style="display: none;"></div>
                 </form>
             </div>
         </nav>
@@ -165,6 +190,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const searchToggle = document.getElementById('search-toggle');
     const searchContainer = document.getElementById('search-container');
     const closeSearch = document.getElementById('close-search');
+    const searchInput = document.getElementById('search-input');
+    const liveSearchResults = document.getElementById('live-search-results');
 
     if (searchToggle && searchContainer && closeSearch) {
         // Sembunyikan search container saat pertama kali load
@@ -178,6 +205,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 searchContainer.style.display = 'block';
                 // Scroll ke atas
                 window.scrollTo({ top: 0, behavior: 'smooth' });
+                // Focus on search input
+                setTimeout(() => searchInput.focus(), 100);
             } else {
                 searchContainer.style.display = 'none';
             }
@@ -186,6 +215,64 @@ document.addEventListener('DOMContentLoaded', function() {
         closeSearch.addEventListener('click', function(e) {
             e.preventDefault();
             searchContainer.style.display = 'none';
+            liveSearchResults.style.display = 'none';
+            searchInput.value = '';
+        });
+    }
+
+    // Live Search functionality
+    let searchTimeout;
+    if (searchInput) {
+        searchInput.addEventListener('input', function() {
+            const query = this.value.trim();
+            
+            // Clear previous timeout
+            clearTimeout(searchTimeout);
+            
+            // Hide results if query is too short
+            if (query.length < 2) {
+                liveSearchResults.style.display = 'none';
+                liveSearchResults.innerHTML = '';
+                return;
+            }
+            
+            // Debounce search
+            searchTimeout = setTimeout(() => {
+                fetch('{{ url("/live_search") }}?query=' + encodeURIComponent(query))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.length > 0) {
+                            let html = '';
+                            data.forEach(product => {
+                                html += `
+                                    <a href="{{ url('/product') }}/${product.produk_id}" class="search-item">
+                                        <img src="{{ asset('uploads') }}/${product.gambar_produk}" alt="${product.nama_produk}" class="search-item-img">
+                                        <div>
+                                            <div class="font-medium">${product.nama_produk}</div>
+                                            <div class="text-sm text-gray-600">Rp ${Number(product.harga).toLocaleString('id-ID')}</div>
+                                        </div>
+                                    </a>
+                                `;
+                            });
+                            liveSearchResults.innerHTML = html;
+                            liveSearchResults.style.display = 'block';
+                        } else {
+                            liveSearchResults.innerHTML = '<div class="p-4 text-gray-500 text-center">Tidak ada hasil</div>';
+                            liveSearchResults.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Search error:', error);
+                        liveSearchResults.style.display = 'none';
+                    });
+            }, 300);
+        });
+
+        // Hide results when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchContainer.contains(e.target) && !searchToggle.contains(e.target)) {
+                liveSearchResults.style.display = 'none';
+            }
         });
     }
 });
