@@ -73,7 +73,7 @@
             <div class="bg-white p-6 rounded-lg shadow">
                 <div class="flex items-center">
                     <div class="p-3 bg-yellow-500 rounded-full">
-                        <i class="fa fa-shopping-cart text-white text-xl"></i>
+                        <i class="fas fa-shopping-cart text-white text-xl"></i>
                     </div>
                     <div class="ml-4">
                         <p class="text-gray-500 text-sm">Total Transaksi</p>

@@ -11,6 +11,9 @@ class Product extends Model
     protected $table = 'produk';
     protected $primaryKey = 'produk_id';
     
+    // Valid product sizes
+    const VALID_SIZES = ['S', 'M', 'L', 'XL'];
+    
     protected $fillable = [
         'nama_produk',
         'deskripsi',
@@ -81,20 +84,25 @@ class Product extends Model
     }
 
     /**
+     * Validate if a size is valid
+     */
+    public static function isValidSize($size)
+    {
+        return in_array(strtoupper($size), self::VALID_SIZES);
+    }
+
+    /**
      * Check if product is in stock
      */
     public function isInStock($size = null, $quantity = 1)
     {
         if ($size) {
             // Validate size input
-            $allowedSizes = ['s', 'm', 'l', 'xl'];
-            $sizeLower = strtolower($size);
-            
-            if (!in_array($sizeLower, $allowedSizes)) {
+            if (!self::isValidSize($size)) {
                 return false;
             }
             
-            $stockField = 'stok_' . $sizeLower;
+            $stockField = 'stok_' . strtolower($size);
             return $this->$stockField >= $quantity;
         }
         return $this->stok >= $quantity;

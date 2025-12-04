@@ -64,8 +64,8 @@ class CartController extends Controller
         $size = $request->input('size', 'M');
         $quantity = $request->input('quantity', 1);
 
-        // Validate size
-        if (!in_array($size, ['S', 'M', 'L', 'XL'])) {
+        // Validate size using Product model
+        if (!App\Models\Product::isValidSize($size)) {
             return response()->json(['success' => false, 'message' => 'Ukuran tidak valid']);
         }
 
